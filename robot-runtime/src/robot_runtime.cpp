@@ -54,11 +54,6 @@ namespace {
 }
 
 void RobotRuntime::run() {
-    // Clear terminal (\033[2J) and move cursor to top left (\033[H).
-    std::cout << "\033[2J\033[H" << std::flush;
-    std::cout << "Robot Runtime Program" << std::endl;
-    std::cout << ">> " << std::flush;
-
     char command_buffer[MAX_BUFFER_SIZE] = {0};
 
     while (true) {
@@ -85,9 +80,6 @@ void RobotRuntime::run() {
                         if (discard_bytes_read == 0) return;
                         if (discard == '\n') break;
                     }
-                    std::cout << "\033[2J\033[H" << std::flush;
-                    std::cout << "Robot Runtime Program" << std::endl;
-                    std::cout << ">> " << std::flush;
                     continue;  
                 }
             }
@@ -96,12 +88,11 @@ void RobotRuntime::run() {
             if (command_buffer[bytes_read - 1] == '\n') command_buffer[bytes_read - 1] = '\0';
             else continue;
 
-            std::cout << "\033[2J\033[H" << std::flush;
-            std::cout << "Robot Runtime Program" << std::endl;
+            
 
             // TODO: Improve command handling
             if (strcmp(command_buffer, "quit") == 0) {
-                std::cout << "\033[2J\033[H" << std::flush;
+                std::cout << "quit acknowledged" << std::endl;
                 break;
             }
             if (strcmp(command_buffer, "move") == 0) std::cout << "Moving... " << std::endl;
