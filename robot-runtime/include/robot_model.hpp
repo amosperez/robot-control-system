@@ -17,6 +17,7 @@ class RobotModel {
         double getPosition();
         int getId();
         std::string getName();
+        void setState(RobotState state);
 
 
     private:

@@ -70,3 +70,7 @@ int RobotModel::getId() {
 std::string RobotModel::getName() {
     return name_;
 }
+
+void RobotModel::setState(RobotState state) {
+    state_ = state;
+}

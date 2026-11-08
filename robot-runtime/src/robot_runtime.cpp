@@ -1,4 +1,5 @@
 #include "robot_runtime.hpp"
+#include "robot_model.hpp"
 
 #include <iostream>     // cout, flush
 #include <sys/select.h> // select(), fd_set, FD_ZERO(), FD_SET(), struct timeval
@@ -7,7 +8,11 @@
 #include <cstdlib>      // exit(), EXIT_FAILURE
 #include <cstring>      // strcmp()
 #include <cerrno>       // errno
+#include <chrono>       // steady_clock, milliseconds()
 // #include <sys/time.h> // system header for interfaces associated with time
+
+using namespace std;
+using namespace chrono;
 
 #define MAX_BUFFER_SIZE 10
 
@@ -30,8 +35,8 @@ namespace {
     }
 
     // Wait for standard input to become readable or until the timeout expires.
-    void wait_for_stdin_readability (fd_set &readable_file_descriptors, struct timeval &timeout) {
-        int ready = select(STDIN_FILENO + 1, &readable_file_descriptors, nullptr, nullptr, &timeout);
+    void wait_for_stdin_readability (fd_set &readable_file_descriptors, struct timeval *timeout) {
+        int ready = select(STDIN_FILENO + 1, &readable_file_descriptors, nullptr, nullptr, timeout);
 
         if (ready == -1) {
             perror("select");
@@ -55,13 +60,32 @@ namespace {
 
 void RobotRuntime::run() {
     char command_buffer[MAX_BUFFER_SIZE] = {0};
+    RobotModel robot(123);
+
+    seconds interval(5);
+    steady_clock::time_point next;
+    steady_clock::time_point now;
+    steady_clock::duration time_left; 
+    struct timeval timeout;
+
+    int i = 0;
 
     while (true) {
         fd_set readable_file_descriptors = create_stdin_read_set();
 
-        struct timeval timeout = create_timeout(2, 0);
+        if (robot.getState() == RobotState::Moving) {
+            now = steady_clock::now();
+            time_left = next - now;
+            if (time_left < seconds(0)) {
+                time_left = seconds(0);
+            }
 
-        wait_for_stdin_readability(readable_file_descriptors, timeout);
+            timeout = create_timeout(duration_cast<seconds>(time_left).count(), 0);
+            wait_for_stdin_readability(readable_file_descriptors, &timeout);
+        }
+        else if (robot.getState() == RobotState::Idle) {
+            wait_for_stdin_readability(readable_file_descriptors, nullptr);
+        }
 
         // Process standard input if readable.
         if (FD_ISSET(STDIN_FILENO, &readable_file_descriptors)) {
@@ -88,18 +112,33 @@ void RobotRuntime::run() {
             if (command_buffer[bytes_read - 1] == '\n') command_buffer[bytes_read - 1] = '\0';
             else continue;
 
-            
-
             // TODO: Improve command handling
             if (strcmp(command_buffer, "quit") == 0) {
-                std::cout << "quit acknowledged" << std::endl;
+                cout << "quit acknowledged" << endl;
                 break;
             }
-            if (strcmp(command_buffer, "move") == 0) std::cout << "Moving... " << std::endl;
-            if (strcmp(command_buffer, "stop") == 0) std::cout << "Idle... " << std::endl;
+            else if (strcmp(command_buffer, "idle") == 0 && (robot.getState() != RobotState::Idle)) {
+                robot.setState(RobotState::Idle);
+                cout << "idle acknowledged" << endl;
+                continue;
+            }
+            else if (strcmp(command_buffer, "moving") == 0 && (robot.getState() != RobotState::Moving)) {
+                robot.setState(RobotState::Moving);
+                cout << "moving acknowledged" << endl;
+                next = steady_clock::now();
+            }
+        }
 
-            std::cout << ">> " << std::flush;
+        if (robot.getState() == RobotState::Moving && now >= next) {
+            steady_clock::time_point now = steady_clock::now();
 
+            microseconds difference = duration_cast<microseconds>(now - next);
+
+            cout << "Deadline difference: " << difference.count() << " us\n";
+
+            cout << i++ << " moving" << endl;
+
+            next += interval;
         }
     }
 }

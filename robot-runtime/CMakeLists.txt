@@ -13,6 +13,7 @@ add_executable(
     robot-runtime
     src/main.cpp
     src/robot_runtime.cpp
+    src/robot_model.cpp
 )
 
 target_include_directories(
@@ -59,6 +60,7 @@ add_executable(
     robot-runtime-tests
     tests/robot_runtime_tests.cpp
     src/robot_runtime.cpp
+    src/robot_model.cpp
 )
 
 target_include_directories(
