@@ -95,7 +95,3 @@ void process_input (RobotModel robot) {
 
     robot.handleCommand(command_buffer);
 }
-
-void update () {
-
-}
