@@ -12,6 +12,8 @@ using namespace chrono;
 using namespace this_thread;
 
 void run () {
+    RobotModel robot(123);
+
     steady_clock::time_point start_time;
     steady_clock::time_point current_time;
     steady_clock::time_point end_time;
@@ -23,14 +25,11 @@ void run () {
     while (!done) {
         start_time = steady_clock::now();
 
-        // Wait for input
-        // Process Input, If any
         if (wait_for_input() == true) {
             process_input();
         }
 
-        update();
-
+        robot.update();
 
         sleep_for(seconds(3));
 
@@ -57,7 +56,7 @@ bool wait_for_input () {
     return FD_ISSET(STDIN_FILENO, &readable_file_descriptors);
 }
 
-void process_input () {
+void process_input (RobotModel robot) {
     const int MAX_BUFFER_SIZE = 20;
     char command_buffer[MAX_BUFFER_SIZE] = {0};
 
@@ -67,15 +66,16 @@ void process_input () {
         perror("read");
         exit(EXIT_FAILURE);
     }
-    if (bytes_read == 0) {
+
+    else if (bytes_read == 0) {
         // Handle EOF
         // Emergency shutdown? Graceful shutdown?
     }
 
     // Reject commands that do not end with newline character. This should handle input that exceeds max input.
-    if (command_buffer[bytes_read - 1] != '\n') {
+    else if (command_buffer[bytes_read - 1] != '\n') {
         while (command_buffer[bytes_read - 1] != '\n') {
-            ssize_t bytes_read = read(STDIN_FILENO, command_buffer, MAX_BUFFER_SIZE);
+            bytes_read = read(STDIN_FILENO, command_buffer, MAX_BUFFER_SIZE);
 
             if (bytes_read == -1) {
                 perror("read");
@@ -84,18 +84,16 @@ void process_input () {
             if (bytes_read == 0) {
                 // Handle EOF
                 // Emergency shutdown? Graceful shutdown?
+                break;
             }
         }
         return;
     }
-
-    if (command_buffer[bytes_read - 1] == '\n') {
+    else { // if (command_buffer[bytes_read - 1] == '\n') {
         command_buffer[bytes_read - 1] = '\0';
     }
 
-    cout << "output: " << command_buffer << endl;
-    // Update robot state based on command.
-
+    robot.handleCommand(command_buffer);
 }
 
 void update () {
